@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { collection, query, onSnapshot, setDoc, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, setDoc, deleteDoc, doc, getDoc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import Hls from 'hls.js';
 
@@ -424,21 +424,7 @@ export const Dashboard = () => {
 
     const incrementVisitor = async () => {
       try {
-        const visited = sessionStorage.getItem('worsttv_session_visited');
-        if (!visited) {
-          sessionStorage.setItem('worsttv_session_visited', 'true');
-          
-          const snap = await getDoc(visitorDocRef);
-          let newCount = 15325;
-          if (snap.exists()) {
-            newCount = (snap.data().count || 15324) + 1;
-            await setDoc(visitorDocRef, { count: newCount }, { merge: true });
-          } else {
-            await setDoc(visitorDocRef, { count: 15325 });
-          }
-          
-          localStorage.setItem('worsttv_local_visitors', newCount.toString());
-        }
+        await setDoc(visitorDocRef, { count: increment(1) }, { merge: true });
       } catch (e) {
         let localCount = localStorage.getItem('worsttv_local_visitors');
         const nextCount = localCount ? parseInt(localCount, 10) + 1 : 15325;
