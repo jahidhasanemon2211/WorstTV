@@ -1122,7 +1122,7 @@ export const Dashboard = () => {
             ? "bg-[#0F172A]/80 border-zinc-900/60" 
             : "bg-white/80 border-slate-200"
         )}>
-          <div className="max-w-[1400px] mx-auto px-4 h-16 grid grid-cols-3 items-center">
+          <div className="max-w-[1600px] mx-auto px-4 h-16 grid grid-cols-3 items-center">
             
             {/* Left Column: Visitor Counter */}
             <div className="flex items-center justify-start">
@@ -1236,7 +1236,7 @@ export const Dashboard = () => {
         </header>
 
         {/* Main Content Container */}
-        <main className="max-w-[1400px] mx-auto px-4 py-6">
+        <main className="max-w-[1600px] mx-auto px-4 py-6">
           
           {/* Hero Carousel Banner */}
           <div className="relative w-full h-[200px] sm:h-[260px] md:h-[300px] rounded-3xl overflow-hidden mb-6 border border-zinc-200/10 dark:border-zinc-900/60 shadow-2xl group/carousel">
@@ -1379,7 +1379,7 @@ export const Dashboard = () => {
                 <div className="space-y-4">
                   {/* Premium Video Player Container */}
                   <div className={cn(
-                    "relative rounded-3xl overflow-hidden bg-black border-t shadow-2xl group transition-all duration-300 w-full",
+                    "sticky top-16 z-40 rounded-3xl overflow-hidden bg-black border-t shadow-2xl group transition-all duration-300 w-full",
                     darkMode
                       ? "border-t-white/10 border-b-2 border-b-black/80 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]"
                       : "border-t-white border-b-2 border-b-slate-300 shadow-[0_20px_45px_rgba(0,0,0,0.18)]"
@@ -1658,13 +1658,13 @@ export const Dashboard = () => {
                 <SidebarCategoryList />
               </div>
 
-              {/* Player Panel (Center Column - takes 7/12 space) */}
-              <div className="lg:col-span-7 space-y-4">
+              {/* Player Panel (Center Column - takes 8/12 space) */}
+              <div className="lg:col-span-8 space-y-4">
                 {activeChannel ? (
                   <div className="space-y-4">
                     {/* Premium Video Player Container */}
                     <div className={cn(
-                      "relative rounded-3xl overflow-hidden bg-black border-t shadow-2xl group transition-all duration-300",
+                      "sticky top-16 z-40 rounded-3xl overflow-hidden bg-black border-t shadow-2xl group transition-all duration-300",
                       darkMode
                         ? "border-t-white/10 border-b-2 border-b-black/80 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)]"
                         : "border-t-white border-b-2 border-b-slate-300 shadow-[0_20px_45px_rgba(0,0,0,0.18)]"
@@ -1835,7 +1835,7 @@ export const Dashboard = () => {
             </div>
 
             {/* Channel List Sidebar or Watch Together Room Panel */}
-            <div className="lg:col-span-3 flex flex-col h-[calc(100vh-10rem)]">
+            <div className="lg:col-span-2 flex flex-col h-[calc(100vh-10rem)]">
               {showRoomPanel && activeRoomId ? (
                 <RoomChatSidebar />
               ) : (
@@ -1868,7 +1868,7 @@ export const Dashboard = () => {
                       <p className="text-xs">No channels found</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-3 perspective-container">
+                    <div className="grid grid-cols-3 lg:grid-cols-2 gap-3 perspective-container">
                       {sortedChannels.map((channel) => {
                         const isActive = activeChannel?.name === channel.name;
                         const schedule = getNowPlaying(channel.name);
@@ -1938,7 +1938,7 @@ export const Dashboard = () => {
       
       {/* Footer (Copyright & Mobile Announce) */}
       <footer className={cn(
-        "max-w-[1400px] mx-auto w-full px-4 py-8 mt-12 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold",
+        "max-w-[1600px] mx-auto w-full px-4 py-8 mt-12 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold",
         darkMode 
           ? "border-zinc-900/60 text-zinc-500" 
           : "border-slate-200 text-slate-500"
