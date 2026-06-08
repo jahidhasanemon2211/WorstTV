@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 3 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.createdAt is number &&
+             data.updatedAt is number;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) &&
+                       isValidUser(incoming()) &&
+                       incoming().createdAt == request.time.toMillis() &&
+                       incoming().updatedAt == request.time.toMillis();
+      allow update: if isOwner(userId) && isValidId(userId) &&
+                       isValidUser(incoming()) &&
+                       incoming().email == existing().email &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt == request.time.toMillis() &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      function isValidFavorite(data) {
+        return data.keys().hasAll(['channelId', 'createdAt']) &&
+               data.keys().size() == 2 &&
+               data.channelId is string && data.channelId.size() <= 128 &&
+               data.createdAt is number;
+      }
+
+      match /favorites/{favoriteId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(favoriteId) &&
+                         isValidFavorite(incoming()) &&
+                         incoming().createdAt == request.time.toMillis() &&
+                         exists(/databases/$(database)/documents/users/$(userId));
+        allow delete: if isOwner(userId) && isValidId(favoriteId);
+      }
+
+      function isValidNotification(data) {
+        return data.keys().hasAll(['title', 'message', 'type', 'read', 'createdAt']) &&
+               data.keys().size() == 5 &&
+               data.title is string && data.title.size() <= 200 &&
+               data.message is string && data.message.size() <= 1000 &&
+               data.type is string && data.type.size() <= 50 &&
+               data.read is bool &&
+               data.createdAt is number;
+      }
+
+      match /notifications/{notificationId} {
+        allow get, list: if isOwner(userId);
+        allow create: if false; // System generated only
+        allow update: if isOwner(userId) && isValidId(notificationId) &&
+                         isValidNotification(incoming()) &&
+                         incoming().title == existing().title &&
+                         incoming().message == existing().message &&
+                         incoming().type == existing().type &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+        allow delete: if isOwner(userId) && isValidId(notificationId);
+      }
+    }
+
+    match /stats/visitors {
+      allow read, write: if true;
+    }
+  }
+}

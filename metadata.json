@@ -1,0 +1,6 @@
+{
+  "name": "WorstTV Live",
+  "description": "WorstTV Live - Live TV application with streaming features, authentications and real-time functions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
