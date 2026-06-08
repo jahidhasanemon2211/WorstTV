@@ -1385,6 +1385,9 @@ export const Dashboard = () => {
                           src={activeChannel.logo} 
                           alt={activeChannel.name} 
                           className="w-full h-full object-contain" 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/WorstTV.png';
+                          }}
                         />
                       </div>
                       <div className="text-left">
@@ -1612,6 +1615,9 @@ export const Dashboard = () => {
                                       alt={channel.name} 
                                       className="max-w-full max-h-full object-contain" 
                                       loading="lazy" 
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = '/WorstTV.png';
+                                      }}
                                     />
                                   )}
                                 </div>
@@ -1670,6 +1676,9 @@ export const Dashboard = () => {
                             src={activeChannel.logo} 
                             alt={activeChannel.name} 
                             className="w-full h-full object-contain" 
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/WorstTV.png';
+                            }}
                           />
                         </div>
                         <div className="text-left">
@@ -1896,6 +1905,9 @@ export const Dashboard = () => {
                                    alt={channel.name} 
                                    className="max-w-full max-h-full object-contain" 
                                    loading="lazy" 
+                                   onError={(e) => {
+                                     (e.target as HTMLImageElement).src = '/WorstTV.png';
+                                   }}
                                  />
                                )}
                              </div>
@@ -1972,7 +1984,13 @@ export const Dashboard = () => {
       {/* Continue Watching Sync Continuity Prompt */}
       {resumePromptChannel && (
         <div className="fixed bottom-6 right-6 bg-[#0F172A]/95 border border-[#ff003c]/30 p-4 rounded-2xl shadow-2xl z-50 text-left max-w-sm w-full animate-slide-in flex gap-3.5 items-center backdrop-blur-md">
-          <img src={resumePromptChannel.logo} className="w-12 h-12 object-contain bg-white rounded-xl p-1.5 shadow" />
+          <img 
+            src={resumePromptChannel.logo} 
+            className="w-12 h-12 object-contain bg-white rounded-xl p-1.5 shadow" 
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/WorstTV.png';
+            }}
+          />
           <div className="flex-1">
             <span className="text-[8.5px] font-black text-amber-400 uppercase tracking-widest leading-none block mb-1">CONTINUE WATCHING?</span>
             <h4 className="font-bold text-xs text-white">Resume {resumePromptChannel.name}</h4>
