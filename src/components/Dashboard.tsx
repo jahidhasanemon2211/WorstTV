@@ -642,6 +642,17 @@ export const Dashboard = () => {
       }
       return matchesSearch && matchesTab;
     });
+    
+    if (cat === 'world-cup') {
+      return [...list].sort((a, b) => {
+        const aIsTSports = a.name.toLowerCase().includes('t sports') || a.name.toLowerCase().includes('tsports');
+        const bIsTSports = b.name.toLowerCase().includes('t sports') || b.name.toLowerCase().includes('tsports');
+        if (aIsTSports && !bIsTSports) return -1;
+        if (!aIsTSports && bIsTSports) return 1;
+        return 0;
+      });
+    }
+    return list;
   };
 
   const handleCategoryClick = (cat: string) => {
@@ -699,6 +710,14 @@ export const Dashboard = () => {
       const aId = a.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
       const bId = b.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
       return recentlyWatched.indexOf(aId) - recentlyWatched.indexOf(bId);
+    });
+  } else if (activeTab === 'world-cup') {
+    sortedChannels.sort((a, b) => {
+      const aIsTSports = a.name.toLowerCase().includes('t sports') || a.name.toLowerCase().includes('tsports');
+      const bIsTSports = b.name.toLowerCase().includes('t sports') || b.name.toLowerCase().includes('tsports');
+      if (aIsTSports && !bIsTSports) return -1;
+      if (!aIsTSports && bIsTSports) return 1;
+      return 0;
     });
   }
 
