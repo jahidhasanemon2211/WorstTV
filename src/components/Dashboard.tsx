@@ -134,6 +134,7 @@ export const Dashboard = () => {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
+  const [isAdBroken, setIsAdBroken] = useState(false);
 
   // --- NEW ADVANCED STATES ---
   // Smart Stream Preview on Hover
@@ -1127,35 +1128,32 @@ export const Dashboard = () => {
             ? "bg-[#0F172A]/80 border-zinc-900/60" 
             : "bg-white/80 border-slate-200"
         )}>
-          <div className="max-w-[1600px] mx-auto px-4 h-16 grid grid-cols-3 items-center">
+          <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between gap-4">
             
-            {/* Left Column: Visitor Counter */}
-            <div className="flex items-center justify-start">
-              <div className="flex flex-col text-left">
+            {/* Left: Logo & Title */}
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+              <div className="bg-white p-1 rounded-xl flex items-center justify-center border border-zinc-200/80 shadow-md flex-shrink-0">
+                <img 
+                  src="/WorstTV.png" 
+                  alt="WorstTV Logo" 
+                  className="w-7 h-7 sm:w-8 sm:h-8 object-contain" 
+                />
+              </div>
+              <div className="flex items-center gap-0.5 sm:gap-1 font-sans select-none">
+                <span className="text-base sm:text-lg md:text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-400 to-amber-600 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">WORST</span>
+                <span className="text-base sm:text-lg md:text-xl font-black tracking-wide text-[#ff003c] drop-shadow-[0_0_8px_rgba(255,0,60,0.55)]">TV</span>
+              </div>
+            </div>
+
+            {/* Right: Actions (Sign In, Dark Mode, Notification Bell, Visitor Counter) */}
+            <div className="flex items-center justify-end gap-2 sm:gap-3 flex-shrink-0 ml-auto">
+              {/* Visitor Counter - Hidden on mobile, visible on sm and above */}
+              <div className="hidden sm:flex flex-col text-left mr-1.5 sm:mr-3">
                 <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">Total Visitors</span>
                 <span className="text-xs font-mono font-black text-[#ff003c] tracking-wider bg-zinc-900/80 px-2.5 py-0.5 rounded border border-zinc-800/80 shadow-inner">
                   {formattedVisitorCount}
                 </span>
               </div>
-            </div>
-
-            {/* Center Column: Logo & Title */}
-            <div className="flex items-center justify-center gap-2.5">
-              <div className="bg-white p-1 rounded-xl flex items-center justify-center border border-zinc-200/80 shadow-md">
-                <img 
-                  src="/WorstTV.png" 
-                  alt="WorstTV Logo" 
-                  className="w-8 h-8 object-contain" 
-                />
-              </div>
-              <div className="flex items-center gap-1 font-sans select-none">
-                <span className="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-400 to-amber-600 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">WORST</span>
-                <span className="text-xl font-black tracking-wide text-[#ff003c] drop-shadow-[0_0_8px_rgba(255,0,60,0.55)]">TV</span>
-              </div>
-            </div>
-
-            {/* Right Column: Actions (Sign In, Dark Mode, Notification Bell) */}
-            <div className="flex items-center justify-end gap-3">
               <button
                 onClick={toggleDarkMode}
                 className={cn(
@@ -1397,9 +1395,9 @@ export const Dashboard = () => {
                   </div>
 
                   {/* Active Channel Details Bar with Share Popover */}
-                  <div className="glass-panel p-4.5 rounded-3xl flex items-center justify-between gap-4 w-full">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-white border border-zinc-200 overflow-hidden flex-shrink-0 flex items-center justify-center p-2.5 shadow-md">
+                  <div className="glass-panel p-4 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full text-left">
+                    <div className="flex items-center gap-3.5 sm:gap-4 w-full md:w-auto">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white border border-zinc-200 overflow-hidden flex-shrink-0 flex items-center justify-center p-2 sm:p-2.5 shadow-md">
                         <img 
                           src={activeChannel.logo} 
                           alt={activeChannel.name} 
@@ -1409,28 +1407,28 @@ export const Dashboard = () => {
                           }}
                         />
                       </div>
-                      <div className="text-left">
-                        <div className="flex items-center gap-2.5 mb-1.5">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/30">
-                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-blink-red"></span>
+                      <div className="text-left flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 mb-1 sm:mb-1.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/30">
+                            <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-red-500 rounded-full animate-blink-red"></span>
                             LIVE | {getViewers(activeChannel.name)} Watching
                           </span>
                           <span className={cn(
-                            "text-[10px] font-bold uppercase tracking-wider",
+                            "text-[8px] sm:text-[10px] font-bold uppercase tracking-wider",
                             darkMode ? "text-zinc-400" : "text-slate-600"
                           )}>
                             / {activeChannel.group}
                           </span>
                         </div>
                         <h2 className={cn(
-                          "text-xl font-extrabold tracking-wide",
+                          "text-base sm:text-lg md:text-xl font-extrabold tracking-wide leading-tight",
                           darkMode ? "text-white" : "text-slate-900"
                         )}>{activeChannel.name}</h2>
                       </div>
                     </div>
 
                     {/* Watchlist & Share Button Group */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end sm:justify-start">
                       <button
                         onClick={() => toggleFavorite(activeChannel)}
                         className={cn(
@@ -1540,13 +1538,16 @@ export const Dashboard = () => {
                   </div>
 
                   {/* Banner Ad below Player details */}
-                  <div className="w-full rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-900/60 bg-zinc-950/20 shadow-md">
-                    <img 
-                      src="/ads.png" 
-                      alt="Advertisement" 
-                      className="w-full h-auto object-contain hover:opacity-95 transition-opacity" 
-                    />
-                  </div>
+                  {!isAdBroken && (
+                    <div className="w-full rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-900/60 bg-zinc-950/20 shadow-md">
+                      <img 
+                        src="/ads.png" 
+                        alt="Advertisement" 
+                        className="w-full h-auto object-contain hover:opacity-95 transition-opacity" 
+                        onError={() => setIsAdBroken(true)}
+                      />
+                    </div>
+                  )}
                   {activeTab === 'world-cup' && <WorldCupScheduleSection />}
                 </div>
               ) : (
@@ -1688,9 +1689,9 @@ export const Dashboard = () => {
                     </div>
 
                     {/* Active Channel Details Bar with Share Popover */}
-                    <div className="glass-panel p-4.5 rounded-3xl flex items-center justify-between gap-4 w-full">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-white border border-zinc-200 overflow-hidden flex-shrink-0 flex items-center justify-center p-2.5 shadow-md">
+                    <div className="glass-panel p-4 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full text-left">
+                      <div className="flex items-center gap-3.5 sm:gap-4 w-full md:w-auto">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white border border-zinc-200 overflow-hidden flex-shrink-0 flex items-center justify-center p-2 sm:p-2.5 shadow-md">
                           <img 
                             src={activeChannel.logo} 
                             alt={activeChannel.name} 
@@ -1700,28 +1701,28 @@ export const Dashboard = () => {
                             }}
                           />
                         </div>
-                        <div className="text-left">
-                          <div className="flex items-center gap-2.5 mb-1.5">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/30">
-                              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-blink-red"></span>
+                        <div className="text-left flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 mb-1 sm:mb-1.5">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/30">
+                              <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-red-500 rounded-full animate-blink-red"></span>
                               LIVE | {getViewers(activeChannel.name)} Watching
                             </span>
                             <span className={cn(
-                              "text-[10px] font-bold uppercase tracking-wider",
-                              darkMode ? "text-zinc-400" : "text-slate-600"
+                              "text-[8px] sm:text-[10px] font-bold uppercase tracking-wider",
+                              darkMode ? "text-zinc-400" : "text-slate-605"
                             )}>
                               / {activeChannel.group}
                             </span>
                           </div>
                           <h2 className={cn(
-                            "text-xl font-extrabold tracking-wide",
+                            "text-base sm:text-lg md:text-xl font-extrabold tracking-wide leading-tight",
                             darkMode ? "text-white" : "text-slate-900"
                           )}>{activeChannel.name}</h2>
                         </div>
                       </div>
 
                       {/* Watchlist & Share Button Group */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end sm:justify-start">
                         <button
                           onClick={() => toggleFavorite(activeChannel)}
                           className={cn(
@@ -1831,13 +1832,16 @@ export const Dashboard = () => {
                     </div>
 
                     {/* Banner Ad below Player details */}
-                    <div className="w-full rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-900/60 bg-zinc-950/20 shadow-md">
-                      <img 
-                        src="/ads.png" 
-                        alt="Advertisement" 
-                        className="w-full h-auto object-contain hover:opacity-95 transition-opacity" 
-                      />
-                    </div>
+                    {!isAdBroken && (
+                      <div className="w-full rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-900/60 bg-zinc-950/20 shadow-md">
+                        <img 
+                          src="/ads.png" 
+                          alt="Advertisement" 
+                          className="w-full h-auto object-contain hover:opacity-95 transition-opacity" 
+                          onError={() => setIsAdBroken(true)}
+                        />
+                      </div>
+                    )}
                     {activeTab === 'world-cup' && <WorldCupScheduleSection />}
                   </div>
                 ) : (
@@ -1960,10 +1964,19 @@ export const Dashboard = () => {
           ? "border-zinc-900/60 text-zinc-500" 
           : "border-slate-200 text-slate-500"
       )}>
-        <div className="flex items-center gap-1.5">
-          <span>Handcrafted with</span>
-          <span className="text-red-500 animate-pulse text-sm">❤️</span>
-          <span>by Md Jahid Hasan Emon © 2026</span>
+        <div className="flex flex-col items-center sm:items-start gap-1">
+          <div className="flex items-center gap-1.5">
+            <span>Handcrafted with</span>
+            <span className="text-red-500 animate-pulse text-sm">❤️</span>
+            <span>by Md Jahid Hasan Emon © 2026</span>
+          </div>
+          {/* Visitor counter for mobile */}
+          <div className="flex items-center gap-1.5 sm:hidden mt-1 select-none">
+            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Visitors:</span>
+            <span className="text-[10px] font-mono font-black text-[#ff003c] tracking-wider bg-zinc-900/80 px-2 py-0.5 rounded border border-zinc-800/80 shadow-inner">
+              {formattedVisitorCount}
+            </span>
+          </div>
         </div>
         <div>
           <span className="tracking-widest uppercase text-[9px] bg-[#ff003c]/10 text-[#ff003c] px-3.5 py-1.5 rounded-full border border-[#ff003c]/20 font-bold">
