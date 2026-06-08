@@ -858,6 +858,12 @@ export const CHANNELS_DATA: Channel[] = [
     "logo": "https://www.jagobd.com/wp-content/uploads/2024/08/logo_50.png",
     "group": "Islamic",
     "url": "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8"
+  },
+  {
+    "name": "STAR JALSHA",
+    "logo": "https://upload.wikimedia.org/wikipedia/en/2/26/Star_Jalsha_logo.png",
+    "group": "India",
+    "url": "http://murgi.live:8083/StarJalshaHD/tracks-v1a1/mono.m3u8?token=74fe67de88ba2cc74404244ac2650a8d4edf96e0-58380a97f18f8e90182d2b2638658416-1780959956-1780949156"
   }
 ];
 
