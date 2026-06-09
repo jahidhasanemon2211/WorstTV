@@ -308,9 +308,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const handleFsChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
+
+    const video = videoRef.current;
+    const handleWebKitBeginFS = () => {
+      setIsFullscreen(true);
+    };
+    const handleWebKitEndFS = () => {
+      setIsFullscreen(false);
+    };
+
     document.addEventListener('fullscreenchange', handleFsChange);
+    if (video) {
+      video.addEventListener('webkitbeginfullscreen', handleWebKitBeginFS);
+      video.addEventListener('webkitendfullscreen', handleWebKitEndFS);
+    }
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFsChange);
+      if (video) {
+        video.removeEventListener('webkitbeginfullscreen', handleWebKitBeginFS);
+        video.removeEventListener('webkitendfullscreen', handleWebKitEndFS);
+      }
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
@@ -352,14 +370,37 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const toggleFullscreen = () => {
-    if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().then(() => {
+    const container = containerRef.current;
+    const video = videoRef.current;
+    if (!container || !video) return;
+
+    if (!document.fullscreenElement && !(video as any).webkitDisplayingFullscreen) {
+      // For iOS Safari (iPhone) which doesn't support element-level requestFullscreen
+      if (!container.requestFullscreen && (video as any).webkitEnterFullscreen) {
+        (video as any).webkitEnterFullscreen();
         setIsFullscreen(true);
-      }).catch(console.error);
+      } else if (container.requestFullscreen) {
+        container.requestFullscreen()
+          .then(() => setIsFullscreen(true))
+          .catch((err) => {
+            console.error("Standard fullscreen failed, attempting webkit fullscreen", err);
+            if ((video as any).webkitEnterFullscreen) {
+              (video as any).webkitEnterFullscreen();
+              setIsFullscreen(true);
+            }
+          });
+      } else if ((video as any).webkitRequestFullscreen) {
+        (video as any).webkitRequestFullscreen();
+        setIsFullscreen(true);
+      }
     } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      } else if ((video as any).webkitExitFullscreen) {
+        (video as any).webkitExitFullscreen();
+        setIsFullscreen(false);
+      }
     }
   };
 
@@ -497,13 +538,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Custom Controls Bar */}
       <div
-        className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 pt-10 flex flex-col justify-end gap-3 transition-opacity duration-300 pointer-events-auto ${
+        className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 sm:p-4 pt-10 flex flex-col justify-end gap-3 transition-opacity duration-300 pointer-events-auto ${
           showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
-        <div className="flex items-center justify-between gap-4 text-white">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 text-white">
           {/* Left Controls (Play, Volume, Mute, Live indicator) */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={togglePlay}
               className="p-1.5 hover:bg-white/10 rounded-lg hover:text-[#ff003c] transition cursor-pointer"
@@ -536,24 +577,24 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 step="0.05"
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeSlider}
-                className="w-16 md:w-24 volume-slider cursor-pointer accent-[#ff003c]"
+                className="hidden md:inline-block w-24 volume-slider cursor-pointer accent-[#ff003c]"
               />
             </div>
 
             {/* Live Indicator */}
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] font-bold tracking-wider">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 rounded-full bg-red-500/10 border border-red-500/30 text-[9px] sm:text-[10px] font-bold tracking-wider">
               <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-blink-red"></span>
               <span className="text-red-500 uppercase">LIVE</span>
             </div>
           </div>
 
           {/* Right Controls (Quality Selector, Theater Mode, Fullscreen) */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             
             {/* Scissor Clip Cutter */}
             <button
               onClick={handleCutClip}
-              className="p-1.5 hover:bg-white/10 rounded-lg hover:text-[#ff003c] transition cursor-pointer"
+              className="hidden md:inline-block p-1.5 hover:bg-white/10 rounded-lg hover:text-[#ff003c] transition cursor-pointer"
               title="Cut Live Video Moment (GIF)"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -575,7 +616,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
                 </svg>
-                <span className="text-[9px] font-bold tracking-wide uppercase bg-white/10 px-1 py-0.5 rounded">
+                <span className="hidden sm:inline-block text-[9px] font-bold tracking-wide uppercase bg-white/10 px-1 py-0.5 rounded">
                   {activeCommentary.substring(0, 3)}
                 </span>
               </button>
@@ -611,7 +652,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   title="Select Quality"
                 >
                   <Settings className="w-5 h-5" />
-                  <span className="text-[11px] font-bold tracking-wide uppercase bg-white/10 px-1.5 py-0.5 rounded">
+                  <span className="hidden sm:inline-block text-[11px] font-bold tracking-wide uppercase bg-white/10 px-1.5 py-0.5 rounded">
                     {getQualityLabel()}
                   </span>
                 </button>
@@ -649,7 +690,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Theater Mode Toggle */}
             <button
               onClick={onToggleTheaterMode}
-              className={`p-1.5 hover:bg-white/10 rounded-lg hover:text-[#ff003c] transition cursor-pointer ${
+              className={`hidden md:inline-block p-1.5 hover:bg-white/10 rounded-lg hover:text-[#ff003c] transition cursor-pointer ${
                 isTheaterMode ? 'text-[#ff003c]' : ''
               }`}
               title={isTheaterMode ? 'Normal Mode' : 'Theater Mode'}
