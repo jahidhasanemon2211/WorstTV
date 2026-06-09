@@ -1211,29 +1211,7 @@ export const Dashboard = () => {
                 )}
               </div>
 
-              {user ? (
-                <div className="flex items-center gap-2.5">
-                  <img 
-                    src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} 
-                    alt="Avatar" 
-                    className="w-7 h-7 rounded-full border border-zinc-800 hover:scale-105 transition-transform" 
-                  />
-                  <button 
-                    onClick={handleLogout} 
-                    className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={handleLogin} 
-                  className="flex items-center gap-1.5 bg-[#ff003c] text-white shadow-lg shadow-[#ff003c]/25 px-4 py-1.5 rounded-xl text-[10px] font-extrabold hover:shadow-[#ff003c]/40 transition-all duration-300 hover:scale-102 active:scale-95 cursor-pointer"
-                >
-                  <LogIn className="w-3 h-3" />
-                  Sign In
-                </button>
-              )}
+
             </div>
           </div>
         </header>
