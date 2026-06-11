@@ -197,7 +197,7 @@ export const CHANNELS_DATA: Channel[] = [
     "name": "T Sports HD",
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/T_Sports_logo.svg/500px-T_Sports_logo.svg.png",
     "group": "Sports",
-    "url": "https://tvsen7.aynaott.com/tsports-hd/index.m3u8?e=1779283784&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=3b4c5a2cfa872fa7f91ffbfb4aa0f658"
+    "url": "http://redforce.live:8082/T_SPORTS_HD/tracks-v1/mono.m3u8?token=a9671e2e11bdd523bd1ff542c03fd7962aabfb74e2748df27ba19cbc71e8ed52a8e5a32-1752816316-1752805516"
   },
   {
     "name": "Wion",
