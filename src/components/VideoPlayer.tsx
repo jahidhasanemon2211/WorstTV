@@ -252,9 +252,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       });
 
+      let retryCount = 0;
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (active) {
           if (data.fatal) {
+            if (retryCount >= 3) {
+              console.error("HLS fatal error: max retries reached. Stopping load.");
+              setIsTransitioning(false);
+              return;
+            }
+            retryCount++;
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
                 console.warn("HLS fatal network error encountered, trying to recover...");
