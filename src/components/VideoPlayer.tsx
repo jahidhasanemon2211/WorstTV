@@ -255,9 +255,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (active) {
           if (data.fatal) {
-            console.warn("HLS fatal error encountered, trying fallback stream...");
-            setIsTransitioning(false);
-            triggerStreamFallback();
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.warn("HLS fatal network error encountered, trying to recover...");
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn("HLS fatal media error encountered, trying to recover...");
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error("HLS unrecoverable fatal error encountered.");
+                setIsTransitioning(false);
+                break;
+            }
           } else if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
             setShowBandwidthAlert(true);
           }
