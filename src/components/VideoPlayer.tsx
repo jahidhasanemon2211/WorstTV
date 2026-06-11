@@ -36,6 +36,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [activeUrl, setActiveUrl] = useState<string>(url);
   const [fallbackCount, setFallbackCount] = useState<number>(0);
   const [aiStatusMessage, setAiStatusMessage] = useState<string | null>(null);
+  const [isMixedContentBlocked, setIsMixedContentBlocked] = useState<boolean>(false);
 
   // AI Bandwidth Manager
   const [showBandwidthAlert, setShowBandwidthAlert] = useState<boolean>(false);
@@ -76,11 +77,44 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     "https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/master.m3u8" // DW News
   ];
 
-  // Sync activeUrl to original URL prop
+  // Sync activeUrl to original URL prop with dynamic token fetch for T-Sports
   useEffect(() => {
-    setActiveUrl(url);
-    setFallbackCount(0);
-    setAiStatusMessage(null);
+    let active = true;
+    setIsMixedContentBlocked(false);
+
+    if (url.includes('T-SPORTS') || url.includes('T_SPORTS') || url.includes('redforce.live')) {
+      setAiStatusMessage("Fetching fresh T-Sports secure session...");
+      setIsTransitioning(true);
+      fetch('/api/t-sports')
+        .then(res => res.json())
+        .then(data => {
+          if (active && data.url) {
+            console.log("Resolved T-Sports secure stream URL:", data.url);
+            setActiveUrl(data.url);
+            setAiStatusMessage(null);
+          } else if (active) {
+            setActiveUrl(url); // fallback to original
+            setAiStatusMessage("Failed to get fresh token. Using fallback.");
+            setTimeout(() => setAiStatusMessage(null), 3000);
+          }
+        })
+        .catch(err => {
+          console.error("Failed to fetch fresh T-Sports token:", err);
+          if (active) {
+            setActiveUrl(url);
+            setAiStatusMessage("Failed to resolve secure stream. Connection issues.");
+            setTimeout(() => setAiStatusMessage(null), 3000);
+          }
+        });
+    } else {
+      setActiveUrl(url);
+      setFallbackCount(0);
+      setAiStatusMessage(null);
+    }
+
+    return () => {
+      active = false;
+    };
   }, [url]);
 
   const triggerStreamFallback = () => {
@@ -256,6 +290,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (active) {
           if (data.fatal) {
+            // Check for mixed content blocking (HTTPS site loading HTTP stream)
+            if (window.location.protocol === 'https:' && activeUrl.startsWith('http://')) {
+              console.error("Mixed Content Block detected! HTTP stream cannot be loaded on HTTPS site.");
+              setIsMixedContentBlocked(true);
+              setIsTransitioning(false);
+              return;
+            }
+
             if (retryCount >= 3) {
               console.error("HLS fatal error: max retries reached. Stopping load.");
               setIsTransitioning(false);
@@ -302,9 +344,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           });
         }
       };
+      
+      const handleVideoError = () => {
+        if (active && window.location.protocol === 'https:' && activeUrl.startsWith('http://')) {
+          console.error("Native player: Mixed Content Block detected!");
+          setIsMixedContentBlocked(true);
+          setIsTransitioning(false);
+        }
+      };
+
       videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+      videoRef.current.addEventListener('error', handleVideoError);
       return () => {
         videoRef.current?.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        videoRef.current?.removeEventListener('error', handleVideoError);
       };
     }
   }, [activeUrl]);
@@ -531,6 +584,51 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Mixed Content Blocked Warning Overlay */}
+      {isMixedContentBlocked && (
+        <div className="absolute inset-0 bg-[#0c101a]/95 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center select-text">
+          <div className="max-w-md w-full bg-zinc-900/80 border border-zinc-800 rounded-3xl p-5 shadow-2xl space-y-4 animate-slide-in">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-3xl animate-bounce">🛡️</span>
+              <h3 className="font-extrabold text-sm text-[#ff003c] uppercase tracking-wider">Browser Blocked Connection</h3>
+              <p className="text-[10px] font-bold text-zinc-400 leading-relaxed">
+                This channel stream is HTTP, but WorstTV is running on HTTPS. Your browser blocks this connection for safety.
+              </p>
+            </div>
+            
+            <div className="border-t border-zinc-850 pt-3 text-left space-y-2 text-[10px]">
+              <p className="font-black text-white uppercase tracking-wider text-center">To allow the channel to play:</p>
+              <ol className="list-decimal list-inside space-y-1 text-zinc-305 leading-normal font-semibold">
+                <li>Click the <strong className="text-amber-400">Not secure / Settings controls</strong> icon next to the URL bar (top left).</li>
+                <li>Select <strong className="text-amber-400">Site settings</strong>.</li>
+                <li>Find <strong className="text-[#ff003c]">Insecure content</strong> (অনিরাপদ কন্টেন্ট) and change it to <strong className="text-green-400">Allow</strong>.</li>
+                <li>Reload the page!</li>
+              </ol>
+            </div>
+
+            <div className="flex gap-2.5 pt-2 border-t border-zinc-850">
+              <button
+                onClick={() => {
+                  window.location.reload();
+                }}
+                className="flex-1 bg-[#ff003c] hover:bg-[#ff003c]/90 text-white font-black py-2 rounded-xl text-xs transition cursor-pointer"
+              >
+                Reload Page
+              </button>
+              <button
+                onClick={() => {
+                  setIsMixedContentBlocked(false);
+                  setIsTransitioning(false);
+                }}
+                className="px-4 bg-zinc-800 hover:bg-zinc-750 text-zinc-455 hover:text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
