@@ -77,10 +77,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     "https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/master.m3u8" // DW News
   ];
 
-  // Sync activeUrl to original URL prop with dynamic token fetch for T-Sports
+  // Sync activeUrl to original URL prop with dynamic token fetch for T-Sports and HTTPS Proxying
   useEffect(() => {
     let active = true;
     setIsMixedContentBlocked(false);
+
+    const checkAndProxy = (streamUrl: string) => {
+      if (window.location.protocol === 'https:' && streamUrl.startsWith('http://')) {
+        const proxiedUrl = `/api/proxy?url=${encodeURIComponent(streamUrl)}`;
+        console.log("Routing stream through HTTPS Proxy:", proxiedUrl);
+        return proxiedUrl;
+      }
+      return streamUrl;
+    };
 
     if (url.includes('T-SPORTS') || url.includes('T_SPORTS') || url.includes('redforce.live')) {
       setAiStatusMessage("Fetching fresh T-Sports secure session...");
@@ -90,10 +99,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         .then(data => {
           if (active && data.url) {
             console.log("Resolved T-Sports secure stream URL:", data.url);
-            setActiveUrl(data.url);
+            setActiveUrl(checkAndProxy(data.url));
             setAiStatusMessage(null);
           } else if (active) {
-            setActiveUrl(url); // fallback to original
+            setActiveUrl(checkAndProxy(url)); // fallback to original
             setAiStatusMessage("Failed to get fresh token. Using fallback.");
             setTimeout(() => setAiStatusMessage(null), 3000);
           }
@@ -101,13 +110,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         .catch(err => {
           console.error("Failed to fetch fresh T-Sports token:", err);
           if (active) {
-            setActiveUrl(url);
+            setActiveUrl(checkAndProxy(url));
             setAiStatusMessage("Failed to resolve secure stream. Connection issues.");
             setTimeout(() => setAiStatusMessage(null), 3000);
           }
         });
     } else {
-      setActiveUrl(url);
+      setActiveUrl(checkAndProxy(url));
       setFallbackCount(0);
       setAiStatusMessage(null);
     }
