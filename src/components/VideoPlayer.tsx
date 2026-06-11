@@ -223,7 +223,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         hlsRef.current.destroy();
       }
 
-      const hls = new Hls({ maxBufferLength: 30, enableWorker: true });
+      const hls = new Hls({
+        maxBufferLength: 10,
+        maxMaxBufferLength: 15,
+        liveSyncDuration: 3,
+        liveMaxLatencyDuration: 10,
+        enableWorker: true,
+        lowLatencyMode: true,
+        appendErrorMaxRetry: 5
+      });
       hlsRef.current = hls;
 
       hls.loadSource(activeUrl);

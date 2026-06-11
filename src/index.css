@@ -17,12 +17,12 @@
   }
 
   .dark {
-    --background: 222.2 47.4% 11.2%; /* #0F172A */
-    --foreground: 210 40% 98%;
-    --card: 222.2 47.4% 17.3%; /* #1E293B */
-    --card-foreground: 210 40% 98%;
-    --border: 215.4 25% 26.7%; /* #334155 */
-    --primary: 348.5 100% 50%; /* Neon Red #ff003c */
+    --background: 240 10% 3.9%; /* #09090b */
+    --foreground: 0 0% 98%;
+    --card: 240 10% 5.9%; /* #0f0f12 */
+    --card-foreground: 0 0% 98%;
+    --border: 240 5.9% 12%; /* #1c1c21 */
+    --primary: 348.5 100% 50%; /* Neon Red theme */
     --primary-foreground: 210 40% 98%;
   }
 }
@@ -137,28 +137,28 @@
 
 /* Dark Mode Overrides */
 .dark .glass-panel {
-  background: rgba(30, 41, 59, 0.85);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
-  border-right: 1px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.65);
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 12, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 1px solid rgba(255, 255, 255, 0.03);
+  border-right: 1px solid rgba(0, 0, 0, 0.6);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.8);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .dark .glass-card {
-  background: rgba(30, 41, 59, 0.5);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  border-left: 1px solid rgba(255, 255, 255, 0.04);
-  border-right: 1px solid rgba(0, 0, 0, 0.35);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.55);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(12, 16, 26, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-left: 1px solid rgba(255, 255, 255, 0.02);
+  border-right: 1px solid rgba(0, 0, 0, 0.5);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.7);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .dark .glass-card:hover {
-  background: rgba(51, 65, 85, 0.88);
+  background: rgba(20, 26, 40, 0.9);
   border-color: rgba(255, 0, 60, 0.35);
   border-bottom-color: rgba(255, 0, 60, 0.55);
-  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .dark .glass-card-active {

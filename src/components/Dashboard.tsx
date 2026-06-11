@@ -152,6 +152,59 @@ export const Dashboard = () => {
   // Continue Watching Resume prompt
   const [resumePromptChannel, setResumePromptChannel] = useState<Channel | null>(null);
 
+  // Care Tel custom states
+  const [popupType, setPopupType] = useState<'mobile' | 'tv' | null>(null);
+  const [showUpdateBanner, setShowUpdateBanner] = useState(true);
+
+  // Dynamic Active Users Presence State
+  const [activeUsersCount, setActiveUsersCount] = useState<number>(1);
+
+  // Real-time Active Users Tracking (Firestore presence system)
+  useEffect(() => {
+    const sessionId = Math.random().toString(36).substring(2, 15);
+    const docRef = doc(db, 'presence', sessionId);
+
+    const updatePresence = async () => {
+      try {
+        await setDoc(docRef, { timestamp: Date.now() });
+      } catch (e) {
+        console.error("Presence update failed", e);
+      }
+    };
+
+    updatePresence();
+    const interval = setInterval(updatePresence, 20000); // update every 20s
+
+    // Listen to total active users (active in the last 60 seconds)
+    const q = collection(db, 'presence');
+    const unsub = onSnapshot(q, (snap) => {
+      const now = Date.now();
+      const active = snap.docs.filter(d => {
+        const data = d.data();
+        return now - (data.timestamp || 0) < 60000;
+      });
+      setActiveUsersCount(Math.max(1, active.length));
+    }, (err) => {
+      console.warn("Firestore presence query blocked.", err);
+      setActiveUsersCount(5); // fallback
+    });
+
+    const cleanup = async () => {
+      clearInterval(interval);
+      try {
+        await deleteDoc(docRef);
+      } catch (e) {}
+    };
+
+    window.addEventListener('beforeunload', cleanup);
+
+    return () => {
+      window.removeEventListener('beforeunload', cleanup);
+      cleanup();
+      unsub();
+    };
+  }, []);
+
   // Auto-play sliding effect for Hero Carousel
   useEffect(() => {
     const timer = setInterval(() => {
@@ -384,9 +437,8 @@ export const Dashboard = () => {
 
   // Initial active channel
   useEffect(() => {
-    if (CHANNELS_DATA.length > 0) {
-      setActiveChannel(CHANNELS_DATA[0]);
-    }
+    // Autoplay disabled on mount. Let user select a channel.
+    setActiveChannel(null);
   }, []);
 
   // Shared Link query param capture
@@ -554,7 +606,7 @@ export const Dashboard = () => {
   useEffect(() => {
     if (!activeRoomId) return;
     const unsub = onSnapshot(query(collection(db, 'rooms', activeRoomId, 'messages')), (snap) => {
-      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
       setRoomMessages(msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)));
     });
     return () => unsub();
@@ -608,12 +660,14 @@ export const Dashboard = () => {
   }, []);
 
   const getFilteredChannelsForCategory = (cat: string) => {
-    return CHANNELS_DATA.filter((c) => {
+    const list = CHANNELS_DATA.filter((c) => {
       const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
       let matchesTab = true;
       if (cat !== 'all') {
         const tab = cat.toLowerCase();
-        if (tab === 'bangla') {
+        if (tab === 'favorites') {
+          matchesTab = favorites.includes(c.name.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+        } else if (tab === 'bangla') {
           matchesTab = c.group.toLowerCase() === 'bangladesh' || c.name.toLowerCase().includes('bangla') || c.name.toLowerCase().includes('nagorik') || c.name.toLowerCase().includes('somoy') || c.name.toLowerCase().includes('ekattor');
         } else if (tab === 'sports') {
           matchesTab = c.group.toLowerCase() === 'sports';
@@ -1117,7 +1171,7 @@ export const Dashboard = () => {
     <div className={cn(
       "min-h-screen transition-colors duration-300 pb-12 flex flex-col justify-between",
       darkMode 
-        ? "bg-[#0F172A] text-zinc-100" 
+        ? "bg-[#070b13] text-zinc-100" 
         : "bg-slate-50 text-zinc-900"
     )}>
       <div>
@@ -1125,28 +1179,36 @@ export const Dashboard = () => {
         <header className={cn(
           "sticky top-0 z-50 border-b transition-colors duration-300 backdrop-blur-md",
           darkMode 
-            ? "bg-[#0F172A]/80 border-zinc-900/60" 
+            ? "bg-[#05070c]/85 border-zinc-900/60" 
             : "bg-white/80 border-slate-200"
         )}>
           <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between gap-4">
             
             {/* Left: Logo & Title */}
-            <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-              <div className="bg-white p-1 rounded-xl flex items-center justify-center border border-zinc-200/80 shadow-md flex-shrink-0">
-                <img 
-                  src="/WorstTV.png" 
-                  alt="WorstTV Logo" 
-                  className="w-7 h-7 sm:w-8 sm:h-8 object-contain" 
-                />
+            <div className="flex items-center gap-2.5 flex-shrink-0">
+              <div className="flex items-center justify-center flex-shrink-0">
+                {/* WorstTV Premium Red/White Logo */}
+                <svg className="w-8 h-8 text-[#ff003c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+                  <polyline points="17 2 12 7 7 2" />
+                </svg>
               </div>
-              <div className="flex items-center gap-0.5 sm:gap-1 font-sans select-none">
-                <span className="text-base sm:text-lg md:text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-400 to-amber-600 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">WORST</span>
-                <span className="text-base sm:text-lg md:text-xl font-black tracking-wide text-[#ff003c] drop-shadow-[0_0_8px_rgba(255,0,60,0.55)]">TV</span>
+              <div className="flex flex-col font-sans select-none text-left leading-none">
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-lg font-black tracking-tight text-white">Worst</span>
+                  <span className="text-lg font-black tracking-tight text-[#ff003c]">TV</span>
+                </div>
+                <span className="text-[7px] font-semibold text-zinc-400 tracking-wider mt-0.5">Stream Live Channels</span>
               </div>
             </div>
 
             {/* Right: Actions (Sign In, Dark Mode, Notification Bell, Visitor Counter) */}
             <div className="flex items-center justify-end gap-2 sm:gap-3 flex-shrink-0 ml-auto">
+              {/* Active Users Pill */}
+              <div className="flex items-center gap-1.5 bg-[#2A0F1A] border border-[#ff003c]/20 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold text-[#FF4B72]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ff003c] animate-pulse"></span>
+                <span>Active Users: {activeUsersCount}</span>
+              </div>
               {/* Visitor Counter - Hidden on mobile, visible on sm and above */}
               <div className="hidden sm:flex flex-col text-left mr-1.5 sm:mr-3">
                 <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">Total Visitors</span>
@@ -1219,8 +1281,33 @@ export const Dashboard = () => {
         {/* Main Content Container */}
         <main className="max-w-[1600px] mx-auto px-4 py-6">
           
+          {/* Mobile App & TV App buttons row */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <button
+              onClick={() => setPopupType('mobile')}
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 text-white font-black text-xs sm:text-sm hover:bg-zinc-800/80 transition-all cursor-pointer shadow-md"
+            >
+              {/* Green Android Icon */}
+              <svg className="w-4 h-4 text-[#22C55E] flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.523 15.3l1.816 3.146a.5.5 0 1 1-.866.5l-1.836-3.18a9.964 9.964 0 0 1-9.274 0l-1.836 3.18a.5.5 0 0 1-.866-.5L6.477 15.3A10.003 10.003 0 0 1 2 7h20a10.003 10.003 0 0 1-4.477 8.3zM7 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm10 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+              </svg>
+              <span>Mobile App</span>
+            </button>
+            <button
+              onClick={() => setPopupType('tv')}
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 text-white font-black text-xs sm:text-sm hover:bg-zinc-800/80 transition-all cursor-pointer shadow-md"
+            >
+              {/* Blue TV Icon */}
+              <svg className="w-4.5 h-4.5 text-[#38BDF8] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                <polyline points="17 2 12 7 7 2"/>
+              </svg>
+              <span>TV App</span>
+            </button>
+          </div>
+
           {/* Hero Carousel Banner */}
-          <div className="relative w-full h-[200px] sm:h-[260px] md:h-[300px] rounded-3xl overflow-hidden mb-6 border border-zinc-200/10 dark:border-zinc-900/60 shadow-2xl group/carousel">
+          <div className="relative w-full h-[200px] sm:h-[260px] md:h-[300px] rounded-3xl overflow-hidden mb-6 border border-zinc-200/10 dark:border-zinc-900/60 shadow-2xl group/carousel hidden lg:block">
             {heroSlides.map((slide, index) => {
               const isSelected = currentHeroSlide === index;
               return (
@@ -1515,6 +1602,26 @@ export const Dashboard = () => {
                     </div>
                   </div>
 
+                  {/* Megaphone Update Banner */}
+                  {showUpdateBanner && (
+                    <div className="flex items-center justify-between gap-3 p-3.5 bg-[#1E0B11] border border-[#ff003c]/20 rounded-2xl text-left w-full">
+                      <div className="flex items-center gap-2.5 text-xs">
+                        <svg className="w-4.5 h-4.5 text-[#ff003c] flex-shrink-0 animate-bounce" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                        </svg>
+                        <span className="font-semibold text-zinc-350">
+                          <strong className="text-[#ff003c] mr-1">UPDATE:</strong> যোগাযোগ করুন : 01303258509 #
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowUpdateBanner(false)}
+                        className="w-5 h-5 rounded-full bg-[#2E121C] hover:bg-[#ff003c] text-[#FF4B72] hover:text-white transition flex items-center justify-center text-[10px] font-bold cursor-pointer flex-shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
                   {/* Banner Ad below Player details */}
                   {!isAdBroken && (
                     <div className="w-full rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-900/60 bg-zinc-950/20 shadow-md">
@@ -1529,9 +1636,33 @@ export const Dashboard = () => {
                   {activeTab === 'world-cup' && <WorldCupScheduleSection />}
                 </div>
               ) : (
-                <div className="aspect-video bg-zinc-900/10 backdrop-blur-md rounded-3xl border border-zinc-850 flex flex-col items-center justify-center shadow-inner gap-3">
-                  <Tv className="w-10 h-10 opacity-30 text-[#ff003c] animate-pulse" />
-                  <p className="text-zinc-500 text-sm">Select a channel to start watching</p>
+                <div className="aspect-video bg-zinc-950/80 backdrop-blur-md rounded-3xl border border-zinc-850 flex flex-col items-center justify-center shadow-2xl gap-4 p-6 select-none relative overflow-hidden group">
+                  {/* Glowing background aura */}
+                  <div className="absolute inset-0 bg-radial-gradient from-[#ff003c]/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+                  
+                  <div className="flex flex-col items-center gap-3 relative z-10 animate-fade-in">
+                    {/* Sleek SVG Logo */}
+                    <div className="w-20 h-20 rounded-2xl bg-[#ff003c]/10 border border-[#ff003c]/20 flex items-center justify-center shadow-lg shadow-[#ff003c]/5 group-hover:scale-105 group-hover:border-[#ff003c]/35 transition-all duration-500">
+                      <svg className="w-10 h-10 text-[#ff003c] drop-shadow-[0_0_10px_rgba(255,0,60,0.5)] animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+                        <polyline points="17 2 12 7 7 2" />
+                      </svg>
+                    </div>
+                    
+                    {/* Branding Text */}
+                    <div className="text-center mt-2">
+                      <h2 className="text-2xl font-black tracking-tight text-white flex items-center justify-center gap-1">
+                        <span>Worst</span>
+                        <span className="text-[#ff003c] drop-shadow-[0_0_8px_rgba(255,0,60,0.3)]">TV</span>
+                      </h2>
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Stream Live Channels</p>
+                    </div>
+                  </div>
+                  
+                  {/* Hint */}
+                  <p className="text-xs font-bold text-zinc-450 bg-zinc-900/50 border border-zinc-800/80 px-4 py-1.5 rounded-full mt-2 group-hover:text-white transition-colors duration-300">
+                    Select a channel to start watching
+                  </p>
                 </div>
               )}
 
@@ -1547,7 +1678,7 @@ export const Dashboard = () => {
                   <div className="glass-panel rounded-3xl overflow-hidden flex flex-col flex-1">
                     
                     {/* Glowing Search Bar */}
-                    <div className="p-4 border-b border-zinc-200/50 dark:border-zinc-900/50">
+                    <div className="p-4 border-b border-zinc-900/60">
                       <div className="relative group">
                         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-[#ff003c] transition-colors" />
                         <input
@@ -1556,15 +1687,50 @@ export const Dashboard = () => {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className={cn(
-                            "w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-[#ff003c]/50 focus:border-[#ff003c] shadow-[0_0_15px_rgba(255,0,60,0.15)]",
+                            "w-full pl-10 pr-4 py-2.5 border rounded-full text-xs outline-none transition-all focus:ring-1 focus:ring-[#ff003c]/40 focus:border-[#ff003c] shadow-md",
                             darkMode 
-                              ? "bg-zinc-950/80 border-zinc-900 text-white placeholder:text-zinc-500" 
+                              ? "bg-[#0c101a] border-zinc-800 text-white placeholder:text-zinc-500" 
                               : "bg-slate-50 border-slate-200 text-slate-955 placeholder:text-slate-400"
                           )}
                         />
                       </div>
                     </div>
 
+                    {/* Horizontal Category Tabs Bar */}
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide py-2.5 px-4 bg-zinc-950/20 border-b border-zinc-900/60">
+                      {['all', 'favorites', 'world-cup', 'sports', 'bangla', 'english', 'hindi', 'islamic', 'kids'].map((cat) => {
+                        const isActive = activeTab === cat;
+                        const displayLabels: Record<string, string> = {
+                          all: 'All Channels',
+                          favorites: 'Favorites',
+                          'world-cup': 'World Cup',
+                          sports: 'Sports',
+                          bangla: 'Bangla',
+                          english: 'English',
+                          hindi: 'Hindi',
+                          islamic: 'Islamic',
+                          kids: 'Kids'
+                        };
+                        const displayLabel = displayLabels[cat] || cat;
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => handleCategoryClick(cat)}
+                            className={cn(
+                              "px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5",
+                              isActive
+                                ? "bg-white text-black font-extrabold shadow-md scale-102"
+                                : "bg-[#0c101a] border border-zinc-800 text-zinc-400 hover:text-white"
+                            )}
+                          >
+                            {cat === 'favorites' && <span className="text-[#ff003c]">❤️</span>}
+                            {cat === 'world-cup' && <span>🏆</span>}
+                            <span>{displayLabel}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+ 
                     {/* Channels grid */}
                     <div className="flex-1 overflow-y-auto p-5 scrollbar-hide max-h-[600px]">
                       {sortedChannels.length === 0 ? (
@@ -1577,57 +1743,79 @@ export const Dashboard = () => {
                           {sortedChannels.map((channel) => {
                             const isActive = activeChannel?.name === channel.name;
                             const schedule = getNowPlaying(channel.name);
-
+ 
                             return (
-                              <button
-                                key={channel.name}
-                                onClick={() => handleChannelSelect(channel)}
-                                onMouseEnter={() => setHoveredChannelName(channel.name)}
-                                onMouseLeave={() => setHoveredChannelName(null)}
-                                className={cn(
-                                  "relative flex flex-col items-center p-3 rounded-2xl w-full group cursor-pointer transition-all duration-300 hover:scale-105 hover:-translate-y-0.5",
-                                  isActive 
-                                    ? "glass-card glass-card-active border-[#ff003c]" 
-                                    : "glass-card"
-                                )}
-                              >
-                                {/* Mini EPG Hover Preview Overlay */}
-                                <div className="absolute inset-0 bg-[#0F172A]/95 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 flex flex-col items-center justify-center p-2 text-center pointer-events-none border border-[#ff003c]/20">
-                                  <span className="text-[7.5px] font-black text-[#ff003c] uppercase tracking-widest mb-1 animate-pulse">UPCOMING SHOW</span>
-                                  <p className="text-[9.5px] font-extrabold text-white leading-snug line-clamp-2 mb-0.5 px-0.5 break-words">
-                                    {getNextShow(channel.name).show}
-                                  </p>
-                                  <span className="text-[8.5px] font-medium text-zinc-400">
-                                    at {getNextShow(channel.name).time}
-                                  </span>
-                                </div>
-                                {isActive && (
-                                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full animate-blink-red z-10" />
-                                )}
-                                <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center p-2.5 overflow-hidden shadow-md transition-all duration-300 group-hover:scale-105">
-                                  {hoveredChannelName === channel.name && !isOffline ? (
-                                    <HoverPreviewPlayer url={channel.url} logo={channel.logo} />
-                                  ) : (
-                                    <img 
-                                      src={channel.logo} 
-                                      alt={channel.name} 
-                                      className="max-w-full max-h-full object-contain" 
-                                      loading="lazy" 
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src = '/WorstTV.png';
-                                      }}
-                                    />
+                              <div key={channel.name} className="relative w-full">
+                                {/* Favorite Button Overlay on Top Right */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFavorite(channel);
+                                  }}
+                                  className="absolute top-2.5 right-2.5 z-30 p-1 text-zinc-400 hover:text-red-500 transition cursor-pointer"
+                                >
+                                  <svg
+                                    className={cn(
+                                      "w-3.5 h-3.5",
+                                      favorites.includes(channel.name.toLowerCase().replace(/[^a-z0-9]/g, '-'))
+                                        ? "fill-current text-[#ff003c]"
+                                        : "stroke-current fill-none text-white/50"
+                                    )}
+                                    viewBox="0 0 24 24"
+                                    strokeWidth="2"
+                                    stroke="currentColor"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                                  </svg>
+                                </button>
+
+                                <button
+                                  onClick={() => handleChannelSelect(channel)}
+                                  onMouseEnter={() => setHoveredChannelName(channel.name)}
+                                  onMouseLeave={() => setHoveredChannelName(null)}
+                                  className={cn(
+                                    "relative flex flex-col items-center p-2.5 rounded-2xl w-full group cursor-pointer transition-all duration-300 hover:scale-105 overflow-hidden",
+                                    isActive 
+                                      ? "bg-zinc-900/90 border-2 border-[#ff003c] shadow-lg shadow-[#ff003c]/10" 
+                                      : "bg-[#0c101a] border border-zinc-800/80 hover:border-zinc-700"
                                   )}
-                                </div>
-                                <p className={cn(
-                                  "text-[10px] font-bold text-center mt-2.5 tracking-tight line-clamp-2 w-full px-0.5 leading-snug transition-colors duration-200", 
-                                  isActive 
-                                    ? "text-[#ff003c]" 
-                                    : darkMode ? "text-zinc-200 group-hover:text-white" : "text-slate-900 group-hover:text-black"
-                                )}>
-                                  {channel.name}
-                                </p>
-                              </button>
+                                >
+                                  {isActive && (
+                                    <div className="absolute top-0 left-0 right-0 bg-[#ff003c] text-white text-[7px] font-black tracking-widest py-0.5 text-center uppercase">
+                                      • LIVE PLAYING
+                                    </div>
+                                  )}
+                                  
+                                  {/* Round Logo Box Container */}
+                                  <div className={cn(
+                                    "w-full aspect-video sm:h-14 bg-white rounded-xl flex items-center justify-center p-2 overflow-hidden shadow-md transition-all duration-300 group-hover:scale-102 mt-2.5",
+                                    isActive && "mt-4.5"
+                                  )}>
+                                    {hoveredChannelName === channel.name && !isOffline ? (
+                                      <HoverPreviewPlayer url={channel.url} logo={channel.logo} />
+                                    ) : (
+                                      <img 
+                                        src={channel.logo} 
+                                        alt={channel.name} 
+                                        className="max-w-full max-h-full object-contain" 
+                                        loading="lazy" 
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = '/WorstTV.png';
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                  
+                                  <p className={cn(
+                                    "text-[10px] font-bold text-center mt-2 tracking-tight line-clamp-2 w-full px-0.5 leading-snug transition-colors duration-200", 
+                                    isActive 
+                                      ? "text-[#ff003c] font-bold" 
+                                      : "text-zinc-300 group-hover:text-white"
+                                  )}>
+                                    {channel.name}
+                                  </p>
+                                </button>
+                              </div>
                             );
                           })}
                         </div>
@@ -1649,7 +1837,7 @@ export const Dashboard = () => {
               </div>
 
               {/* Player Panel (Center Column - takes 8/12 space) */}
-              <div className="lg:col-span-8 space-y-4">
+              <div className="lg:col-span-8 space-y-4 lg:sticky lg:top-20 self-start">
                 {activeChannel ? (
                   <div className="space-y-4">
                     {/* Premium Video Player Container */}
@@ -1801,13 +1989,33 @@ export const Dashboard = () => {
                               <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                                 <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.005 5.319 5.324.001 11.867 0c3.169.001 6.148 1.233 8.39 3.476 2.242 2.242 3.472 5.221 3.47 8.39-.005 6.545-5.324 11.863-11.867 11.863-2.008-.002-3.98-.513-5.73-1.488L0 24zm6.59-4.859c1.652.98 3.271 1.498 4.721 1.499 5.25-.001 9.516-4.269 9.519-9.52.002-2.544-.988-4.936-2.79-6.738C16.32 2.58 13.931 1.588 11.87 1.588 6.62 1.589 2.354 5.857 2.35 11.109c0 1.542.417 3.048 1.207 4.383L2.52 19.12l3.645-.956c.15-.042.302-.083.482-.023z" />
                               </svg>
-                              WhatsApp
+                                WhatsApp
                             </a>
                           </div>
                         )}
                         </div>
                       </div>
                     </div>
+
+                    {/* Megaphone Update Banner */}
+                    {showUpdateBanner && (
+                      <div className="flex items-center justify-between gap-3 p-3.5 bg-[#1E0B11] border border-[#ff003c]/20 rounded-2xl text-left w-full mt-4">
+                        <div className="flex items-center gap-2.5 text-xs">
+                          <svg className="w-4.5 h-4.5 text-[#ff003c] flex-shrink-0 animate-bounce" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                          </svg>
+                          <span className="font-semibold text-zinc-350">
+                            <strong className="text-[#ff003c] mr-1">UPDATE:</strong> যোগাযোগ করুন : 01303258509 #
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setShowUpdateBanner(false)}
+                          className="w-5 h-5 rounded-full bg-[#2E121C] hover:bg-[#ff003c] text-[#FF4B72] hover:text-white transition flex items-center justify-center text-[10px] font-bold cursor-pointer flex-shrink-0"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
 
                     {/* Banner Ad below Player details */}
                     {!isAdBroken && (
@@ -1823,22 +2031,43 @@ export const Dashboard = () => {
                     {activeTab === 'world-cup' && <WorldCupScheduleSection />}
                   </div>
                 ) : (
-                <div className="aspect-video bg-zinc-900/10 backdrop-blur-md rounded-3xl border border-zinc-850 flex flex-col items-center justify-center shadow-inner gap-3">
-                  <Tv className="w-10 h-10 opacity-30 text-[#ff003c] animate-pulse" />
-                  <p className="text-zinc-500 text-sm">Select a channel to start watching</p>
-                </div>
-              )}
-            </div>
+                  <div className="aspect-video bg-zinc-950/80 backdrop-blur-md rounded-3xl border border-zinc-850 flex flex-col items-center justify-center shadow-2xl gap-4 p-6 select-none relative overflow-hidden group">
+                    {/* Glowing background aura */}
+                    <div className="absolute inset-0 bg-radial-gradient from-[#ff003c]/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+                    
+                    <div className="flex flex-col items-center gap-3 relative z-10 animate-fade-in">
+                      {/* Sleek SVG Logo */}
+                      <div className="w-20 h-20 rounded-2xl bg-[#ff003c]/10 border border-[#ff003c]/20 flex items-center justify-center shadow-lg shadow-[#ff003c]/5 group-hover:scale-105 group-hover:border-[#ff003c]/35 transition-all duration-500">
+                        <svg className="w-10 h-10 text-[#ff003c] drop-shadow-[0_0_10px_rgba(255,0,60,0.5)] animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+                          <polyline points="17 2 12 7 7 2" />
+                        </svg>
+                      </div>
+                      
+                      {/* Branding Text */}
+                      <div className="text-center mt-2">
+                        <h2 className="text-2xl font-black tracking-tight text-white flex items-center justify-center gap-1">
+                          <span>Worst</span>
+                          <span className="text-[#ff003c] drop-shadow-[0_0_8px_rgba(255,0,60,0.3)]">TV</span>
+                        </h2>
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Stream Live Channels</p>
+                      </div>
+                    </div>
+                    
+                    {/* Hint */}
+                    <p className="text-xs font-bold text-zinc-455 bg-zinc-900/50 border border-zinc-800/80 px-4 py-1.5 rounded-full mt-2 group-hover:text-white transition-colors duration-300">
+                      Select a channel to start watching
+                    </p>
+                  </div>
+                )}
+              </div>
 
-            {/* Channel List Sidebar or Watch Together Room Panel */}
-            <div className="lg:col-span-2 flex flex-col h-[calc(100vh-10rem)]">
-              {showRoomPanel && activeRoomId ? (
-                <RoomChatSidebar />
-              ) : (
+              {/* Channels list (Right Column - takes 2/12 space) */}
+              <div className="lg:col-span-2 flex flex-col h-[600px] lg:h-[calc(100vh-10rem)]">
                 <div className="glass-panel rounded-3xl overflow-hidden flex flex-col flex-1">
                 
                 {/* Glowing Search Bar */}
-                <div className="p-4 border-b border-zinc-200/50 dark:border-zinc-900/50">
+                <div className="p-4 border-b border-zinc-900/60">
                   <div className="relative group">
                     <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-[#ff003c] transition-colors" />
                     <input
@@ -1847,13 +2076,48 @@ export const Dashboard = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className={cn(
-                        "w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-[#ff003c]/50 focus:border-[#ff003c] shadow-[0_0_15px_rgba(255,0,60,0.15)]",
+                        "w-full pl-10 pr-4 py-2.5 border rounded-full text-xs outline-none transition-all focus:ring-1 focus:ring-[#ff003c]/40 focus:border-[#ff003c] shadow-md",
                         darkMode 
-                          ? "bg-zinc-950/80 border-zinc-900 text-white placeholder:text-zinc-500" 
+                          ? "bg-[#0c101a] border-zinc-800 text-white placeholder:text-zinc-500" 
                           : "bg-slate-50 border-slate-200 text-slate-955 placeholder:text-slate-400"
                       )}
                     />
                   </div>
+                </div>
+
+                {/* Horizontal Category Tabs Bar */}
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide py-2.5 px-4 bg-zinc-950/20 border-b border-zinc-900/60">
+                  {['all', 'favorites', 'world-cup', 'sports', 'bangla', 'english', 'hindi', 'islamic', 'kids'].map((cat) => {
+                    const isActive = activeTab === cat;
+                    const displayLabels: Record<string, string> = {
+                      all: 'All Channels',
+                      favorites: 'Favorites',
+                      'world-cup': 'World Cup',
+                      sports: 'Sports',
+                      bangla: 'Bangla',
+                      english: 'English',
+                      hindi: 'Hindi',
+                      islamic: 'Islamic',
+                      kids: 'Kids'
+                    };
+                    const displayLabel = displayLabels[cat] || cat;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => handleCategoryClick(cat)}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5",
+                          isActive
+                            ? "bg-white text-black font-extrabold shadow-md scale-102"
+                            : "bg-[#0c101a] border border-zinc-800 text-zinc-400 hover:text-white"
+                        )}
+                      >
+                        {cat === 'favorites' && <span className="text-[#ff003c]">❤️</span>}
+                        {cat === 'world-cup' && <span>🏆</span>}
+                        <span>{displayLabel}</span>
+                      </button>
+                    );
+                  })}
                 </div>
                 
                 {/* Channel Cards 3-Column Grid */}
@@ -1870,68 +2134,86 @@ export const Dashboard = () => {
                         const schedule = getNowPlaying(channel.name);
 
                         return (
-                          <button
-                             key={channel.name}
-                             onClick={() => handleChannelSelect(channel)}
-                             onMouseEnter={() => setHoveredChannelName(channel.name)}
-                             onMouseLeave={() => setHoveredChannelName(null)}
-                             className={cn(
-                               "relative flex flex-col items-center p-2.5 rounded-2xl w-full group cursor-pointer transition-all duration-300 hover:scale-105 hover:-translate-y-0.5",
-                               isActive 
-                                 ? "glass-card glass-card-active border-[#ff003c]" 
-                                 : "glass-card"
-                             )}
-                           >
-                             {/* Mini EPG Hover Preview Overlay */}
-                             <div className="absolute inset-0 bg-[#0F172A]/95 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 flex flex-col items-center justify-center p-2 text-center pointer-events-none border border-[#ff003c]/20">
-                               <span className="text-[7.5px] font-black text-[#ff003c] uppercase tracking-widest mb-1 animate-pulse">UPCOMING SHOW</span>
-                               <p className="text-[9.5px] font-extrabold text-white leading-snug line-clamp-2 mb-0.5 px-0.5 break-words">
-                                 {getNextShow(channel.name).show}
-                               </p>
-                               <span className="text-[8.5px] font-medium text-zinc-400">
-                                 at {getNextShow(channel.name).time}
-                               </span>
-                             </div>
-                             {isActive && (
-                               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-blink-red z-10" />
-                             )}
-                             
-                             {/* Round Logo Box Container */}
-                             <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center p-2.5 overflow-hidden shadow-md transition-all duration-300 group-hover:scale-105">
-                               {hoveredChannelName === channel.name && !isOffline ? (
-                                 <HoverPreviewPlayer url={channel.url} logo={channel.logo} />
-                               ) : (
-                                 <img 
-                                   src={channel.logo} 
-                                   alt={channel.name} 
-                                   className="max-w-full max-h-full object-contain" 
-                                   loading="lazy" 
-                                   onError={(e) => {
-                                     (e.target as HTMLImageElement).src = '/WorstTV.png';
-                                   }}
-                                 />
-                               )}
-                             </div>
-                             
-                             <p className={cn(
-                               "text-[10px] font-bold text-center mt-2.5 tracking-tight line-clamp-2 w-full px-0.5 leading-snug transition-colors duration-200", 
-                               isActive 
-                                 ? "text-[#ff003c] font-bold" 
-                                 : darkMode ? "text-zinc-200 group-hover:text-white" : "text-slate-900 group-hover:text-black"
-                             )}>
-                               {channel.name}
-                             </p>
-                           </button>
+                          <div key={channel.name} className="relative w-full">
+                            {/* Favorite Button Overlay on Top Right */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(channel);
+                              }}
+                              className="absolute top-2.5 right-2.5 z-30 p-1 text-zinc-400 hover:text-red-500 transition cursor-pointer"
+                            >
+                              <svg
+                                className={cn(
+                                  "w-3.5 h-3.5",
+                                  favorites.includes(channel.name.toLowerCase().replace(/[^a-z0-9]/g, '-'))
+                                    ? "fill-current text-[#ff003c]"
+                                    : "stroke-current fill-none text-white/50"
+                                )}
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                                stroke="currentColor"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                              </svg>
+                            </button>
+
+                            <button
+                              onClick={() => handleChannelSelect(channel)}
+                              onMouseEnter={() => setHoveredChannelName(channel.name)}
+                              onMouseLeave={() => setHoveredChannelName(null)}
+                              className={cn(
+                                "relative flex flex-col items-center p-2.5 rounded-2xl w-full group cursor-pointer transition-all duration-300 hover:scale-105 overflow-hidden",
+                                isActive 
+                                  ? "bg-zinc-900/90 border-2 border-[#ff003c] shadow-lg shadow-[#ff003c]/10" 
+                                  : "bg-[#0c101a] border border-zinc-800/80 hover:border-zinc-700"
+                              )}
+                            >
+                              {isActive && (
+                                <div className="absolute top-0 left-0 right-0 bg-[#ff003c] text-white text-[7px] font-black tracking-widest py-0.5 text-center uppercase">
+                                  • LIVE PLAYING
+                                </div>
+                              )}
+                              
+                              {/* Round Logo Box Container */}
+                              <div className={cn(
+                                "w-full aspect-video sm:h-14 bg-white rounded-xl flex items-center justify-center p-2 overflow-hidden shadow-md transition-all duration-300 group-hover:scale-102 mt-2.5",
+                                isActive && "mt-4.5"
+                              )}>
+                                {hoveredChannelName === channel.name && !isOffline ? (
+                                  <HoverPreviewPlayer url={channel.url} logo={channel.logo} />
+                                ) : (
+                                  <img 
+                                    src={channel.logo} 
+                                    alt={channel.name} 
+                                    className="max-w-full max-h-full object-contain" 
+                                    loading="lazy" 
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/WorstTV.png';
+                                    }}
+                                  />
+                                )}
+                              </div>
+                              
+                              <p className={cn(
+                                "text-[10px] font-bold text-center mt-2 tracking-tight line-clamp-2 w-full px-0.5 leading-snug transition-colors duration-200", 
+                                isActive 
+                                  ? "text-[#ff003c] font-bold" 
+                                  : "text-zinc-300 group-hover:text-white"
+                              )}>
+                                {channel.name}
+                              </p>
+                            </button>
+                          </div>
                         );
                       })}
                     </div>
                   )}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+              </div>
+            </div>
+          )}
       </main>
       </div>
       
@@ -2021,6 +2303,55 @@ export const Dashboard = () => {
               className="text-zinc-500 hover:text-zinc-300 font-bold text-[9px] cursor-pointer text-center"
             >
               Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Coming Soon Popups */}
+      {popupType && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+          <div className="relative max-w-sm w-full bg-[#0d1017] border border-zinc-800 rounded-3xl p-6 text-center shadow-2xl">
+            {/* Close button */}
+            <button 
+              onClick={() => setPopupType(null)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white transition cursor-pointer text-sm font-bold w-6 h-6 rounded-full bg-zinc-900/80 flex items-center justify-center"
+            >
+              ✕
+            </button>
+            
+            {popupType === 'mobile' ? (
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/20 flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-[#22C55E]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.523 15.3l1.816 3.146a.5.5 0 1 1-.866.5l-1.836-3.18a9.964 9.964 0 0 1-9.274 0l-1.836 3.18a.5.5 0 0 1-.866-.5L6.477 15.3A10.003 10.003 0 0 1 2 7h20a10.003 10.003 0 0 1-4.477 8.3zM7 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm10 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-black text-white mb-2">Mobile App</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+                  mobile app comming soon
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-[#38BDF8]/10 border border-[#38BDF8]/20 flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-[#38BDF8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                    <polyline points="17 2 12 7 7 2"/>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-black text-white mb-2">TV App</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+                  tv app comming soon
+                </p>
+              </div>
+            )}
+            
+            <button
+              onClick={() => setPopupType(null)}
+              className="w-full py-2.5 rounded-xl bg-[#ff003c] hover:bg-[#ff003c]/90 text-white font-black text-xs transition cursor-pointer shadow-md shadow-[#ff003c]/20"
+            >
+              Close
             </button>
           </div>
         </div>
