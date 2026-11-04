@@ -203,7 +203,7 @@ export const CHANNELS_DATA: Channel[] = [
     "name": "T Sports HD",
     "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/T_Sports_logo.svg/500px-T_Sports_logo.svg.png",
     "group": "Sports",
-    "url": "http://redforce.live:8082/T-SPORTS-HD/index.m3u8?token=388baddb97762f6a7776052831dc817219f5b5cd-759a8f2a38def1df26105e48e290838f-1752818056-1752807256&remote=no_check_ip"
+    "url": "http://10.101.101.101:8080/live/channel3/index.m3u8"
   },
   {
     "name": "Wion",
