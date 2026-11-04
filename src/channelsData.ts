@@ -2,6 +2,12 @@ import { Channel, MatchHighlight } from "./types";
 
 export const CHANNELS_DATA: Channel[] = [
   {
+    "name": "STAR GOLD",
+    "logo": "http://cdn.moviemazic.xyz:8083/Star-Gold/tracks-v1a1/mono.m3u8?token=306cf19c2611c93eaf9d67b44a52d0ac414fa620-f3f88a270e3422d653578c116125c899-1793829871-1793819071",
+    "group": "News",
+    "url": "http://cdn.moviemazic.xyz:8083/Star-Gold/tracks-v1a1/mono.m3u8?token=306cf19c2611c93eaf9d67b44a52d0ac414fa620-f3f88a270e3422d653578c116125c899-1793829871-1793819071"
+  },
+  {
     "name": "Al-Jazeera HD",
     "logo": "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhaBdbL7lCwCj-0NYvOvZtvJGm-yXMAhAYq4u99CmYcBJRJjhVU9SkS8IzwaWy1F1f7EUJqL_fXMWgxA4P9n09QVQrzV1jM5JtPVeNcGeMMA5_HVD4bBYQ97OZN7ijNWa700_po0PVIZEXaCgDDVnjSa6Mv9V33gHPPxLSDH1GNPrQ0AsnIufh3NBbM/s600/Nur_20251026_223118_0000.png",
     "group": "News",
