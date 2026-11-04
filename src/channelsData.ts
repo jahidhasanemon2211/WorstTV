@@ -869,7 +869,7 @@ export const CHANNELS_DATA: Channel[] = [
     "name": "STAR JALSHA",
     "logo": "https://upload.wikimedia.org/wikipedia/en/2/26/Star_Jalsha_logo.png",
     "group": "India",
-    "url": "http://murgi.live:8083/StarJalshaHD/tracks-v1a1/mono.m3u8?token=74fe67de88ba2cc74404244ac2650a8d4edf96e0-58380a97f18f8e90182d2b2638658416-1780959956-1780949156"
+    "url": "http://cdn.moviemazic.xyz:8083/StarJalshaHD/tracks-v1a1/mono.m3u8?token=bcc98300bdefe18cde66bb5cd0f991d1d4570117-af7b9df9a5174d81386f0f0cfcff28e8-1793830208-1793819408"
   }
 ];
 
